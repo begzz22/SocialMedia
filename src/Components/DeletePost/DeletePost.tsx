@@ -6,38 +6,30 @@ import toast from "react-hot-toast";
 const DeletePost = ({ id }: { id: string }) => {
   const queryClient = useQueryClient();
 
-  function deletePost() {
-    return axios.delete(`https://route-posts.routemisr.com/posts/${id}`, {
-      headers: {
-        Authorization: "Bearer " + localStorage.getItem("token"),
-      },
-    });
-  }
-
   const { isPending, mutate } = useMutation({
-    mutationFn: deletePost,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: ["Posts"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["UserPost"],
-      });
-
-      toast.success(data.data.message);
+    mutationFn: () =>
+      axios.delete(`https://route-posts.routemisr.com/posts/${id}`, {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("token"),
+        },
+      }),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["Posts"] });
+      queryClient.invalidateQueries({ queryKey: ["UserPost"] });
+      toast.success(res.data?.message ?? "Post deleted");
     },
-    onError: (error) => {
-      toast.error(error.response.data.message);
-    },
+    onError: (e) =>
+      toast.error(
+        axios.isAxiosError(e)
+          ? (e.response?.data?.message ?? "Delete failed")
+          : "Delete failed",
+      ),
   });
 
   return (
-    <>
-      <Button onClick={mutate} variant="danger">
-        Delete
-      </Button>
-    </>
+    <Button isDisabled={isPending} onClick={() => mutate()} variant="danger">
+      Delete
+    </Button>
   );
 };
 
